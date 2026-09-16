@@ -1,4 +1,6 @@
 # Orchestration autonome LAN : PostgreSQL, API et interface web.
+name: soremed
+
 services:
   database:
     image: postgres:17-alpine
@@ -36,6 +38,8 @@ services:
     networks: [soremed_lan]
 volumes:
   postgres_data:
+    external: true
+    name: docker_postgres_data
 networks:
   soremed_lan:
     driver: bridge
