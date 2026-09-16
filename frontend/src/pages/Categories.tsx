@@ -1,0 +1,15 @@
+// Référentiel des catégories pharmaceutiques et couverture du catalogue.
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FolderTree, Plus, Search } from 'lucide-react'
+import { api } from '../lib/api'
+import type { Category, Product } from '../types'
+import { Empty, Loading, Modal, Notice, PageHeader } from '../components/UI'
+
+export default function Categories(){
+ const qc=useQueryClient(),[q,setQ]=useState(''),[open,setOpen]=useState(false),[name,setName]=useState(''),[notice,setNotice]=useState<{message:string;type:'success'|'error'}|null>(null)
+ const categories=useQuery({queryKey:['categories-management'],queryFn:()=>api.get<Category[]>('/categories').then(response=>response.data)}),products=useQuery({queryKey:['products-categories'],queryFn:()=>api.get<Product[]>('/products').then(response=>response.data)})
+ const create=useMutation({mutationFn:()=>api.post('/categories',{name:name.trim()}),onSuccess:()=>{qc.invalidateQueries({queryKey:['categories']});qc.invalidateQueries({queryKey:['categories-management']});setOpen(false);setName('');setNotice({message:'Catégorie ajoutée au référentiel.',type:'success'})},onError:(error:any)=>setNotice({message:error.response?.data?.detail||'Impossible d’ajouter cette catégorie.',type:'error'})})
+ const rows=(categories.data||[]).filter(category=>category.name.toLowerCase().includes(q.toLowerCase()))
+ return <><PageHeader title="Catégories" subtitle="Organisation du catalogue pharmaceutique" action={<button className="btn-primary" onClick={()=>setOpen(true)}><Plus size={17}/>Nouvelle catégorie</button>}/><div className="erp-toolbar"><div className="relative"><Search className="absolute left-3 top-3 text-slate-400" size={18}/><input className="input pl-10" value={q} onChange={event=>setQ(event.target.value)} placeholder="Rechercher une catégorie…"/></div></div>{categories.isLoading||products.isLoading?<Loading/>:rows.length?<div className="category-management-grid">{rows.map(category=>{const count=(products.data||[]).filter(product=>product.category_id===category.id).length;return <article key={category.id} className="category-management-card"><span><FolderTree/></span><div><h3>{category.name}</h3><p>{count} produit(s) associé(s)</p></div><strong>{count}</strong></article>})}</div>:<Empty text="Aucune catégorie ne correspond à cette recherche."/>}{open&&<Modal title="Nouvelle catégorie" onClose={()=>setOpen(false)}><form className="space-y-4" onSubmit={event=>{event.preventDefault();create.mutate()}}><label><span className="label">Nom de la catégorie</span><input className="input" value={name} onChange={event=>setName(event.target.value)} minLength={2} required autoFocus/></label><div className="flex justify-end gap-3"><button type="button" className="btn-secondary" onClick={()=>setOpen(false)}>Annuler</button><button className="btn-primary" disabled={create.isPending||name.trim().length<2}>{create.isPending?'Ajout…':'Ajouter'}</button></div></form></Modal>}{notice&&<Notice {...notice} onClose={()=>setNotice(null)}/>}</>
+}

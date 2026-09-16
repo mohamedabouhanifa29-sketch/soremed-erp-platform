@@ -1,0 +1,1 @@
+"""Assistant conversationnel local SOREMED."""

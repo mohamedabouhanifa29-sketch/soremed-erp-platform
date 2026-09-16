@@ -1,0 +1,37 @@
+# Configuration et secrets locaux
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dépendances et caches
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.tsbuildinfo
+
+# Sorties et état local
+dist/
+build/
+.runtime/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
+*.sql
+backups/
+uploads/*
+!uploads/.gitkeep
+
+# Démonstration et outils historiques conservés localement
+soremed-demo-video/
+backend/inspect_sqlite.py
+backend/migrate_sqlite_to_postgres.py

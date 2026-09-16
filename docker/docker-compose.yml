@@ -1,0 +1,41 @@
+# Orchestration autonome LAN : PostgreSQL, API et interface web.
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-soremed}
+      POSTGRES_USER: ${POSTGRES_USER:-soremed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans docker/.env}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soremed} -d ${POSTGRES_DB:-soremed}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [soremed_lan]
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-soremed}:${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans docker/.env}@database:5432/${POSTGRES_DB:-soremed}
+      JWT_SECRET: ${JWT_SECRET:?Définir JWT_SECRET dans docker/.env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?Définir BOOTSTRAP_ADMIN_EMAIL dans docker/.env}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Définir BOOTSTRAP_ADMIN_PASSWORD dans docker/.env}
+      UPLOAD_DIR: /uploads
+    volumes: [../uploads:/uploads]
+    depends_on:
+      database: { condition: service_healthy }
+    networks: [soremed_lan]
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+    ports: ["${HTTP_PORT:-80}:80"]
+    depends_on: [backend]
+    networks: [soremed_lan]
+volumes:
+  postgres_data:
+networks:
+  soremed_lan:
+    driver: bridge
